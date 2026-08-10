@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabbit Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header>
+      <h1>Rabbit Tracker</h1>
+      <p>Keep track of your rabbit’s last known location so you never lose it.</p>
+    </header>
+
+    <section class="panel">
+      <h2>Add a new sighting</h2>
+      <form id="sightingForm">
+        <label>
+          Location
+          <input id="location" type="text" placeholder="Garden gate, shed, field..." required />
+        </label>
+        <label>
+          Notes
+          <textarea id="notes" rows="3" placeholder="What did you see?"></textarea>
+        </label>
+        <button type="submit">Save sighting</button>
+      </form>
+    </section>
+
+    <section class="panel" id="statusPanel">
+      <h2>Last known location</h2>
+      <div id="latest" class="latest-card">No sightings yet.</div>
+    </section>
+
+    <section class="panel">
+      <h2>All sightings</h2>
+      <ul id="sightingsList" class="sightings-list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
