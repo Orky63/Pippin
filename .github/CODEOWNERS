@@ -1,0 +1,6 @@
+# All changes require owner approval
+* @l3xcaliburr
+
+# Infrastructure - explicitly locked
+terraform/ @l3xcaliburr
+.github/ @l3xcaliburr

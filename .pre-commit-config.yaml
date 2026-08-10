@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/terraform-docs/terraform-docs
+    rev: v0.19.0
+    hooks:
+      - id: terraform-docs-go
+        name: terraform-docs
+        entry: terraform-docs markdown table --output-file README.md
+        language: golang
+        files: (^[^.].*\.tf$|\.tfvars$)
+        exclude: ^modules/
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.99.0
+    hooks:
+      - id: terraform_fmt
+        args:
+          - --args=-recursive
+      - id: terraform_validate
+      - id: terraform_tflint
+        args:
+          - --args=--recursive
+      - id: terraform_trivy
+        args:
+          - --args=--severity=HIGH,CRITICAL
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files

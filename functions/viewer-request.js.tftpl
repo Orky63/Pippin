@@ -1,0 +1,93 @@
+function handler(event) {
+  var request = event.request;
+
+  %{ if enable_site_password ~}
+  // ── Basic Auth gate ────────────────────────────────────────────────────
+  var expected = "Basic ${credentials_base64}";
+  if (
+    typeof request.headers.authorization === "undefined" ||
+    request.headers.authorization.value !== expected
+  ) {
+    return {
+      statusCode: 401,
+      statusDescription: "Unauthorized",
+      headers: { "www-authenticate": { value: 'Basic realm="Protected"' } },
+    };
+  }
+  %{ endif ~}
+
+  %{ if enable_clean_urls ~}
+  // ── Clean URL rewrite (directory-style, no-slash canonical) ───────────
+  //
+  // Every page ships as `path/index.html` and is addressed as `/path`.
+  // Mirrors the URL shape used by Shopify, Stripe, Vercel, Netlify, and
+  // every Jamstack static site generator (Next.js export, Hugo, Gatsby,
+  // Astro). Single source of truth for path, no ambiguity between flat
+  // `about.html` and `about/index.html`.
+  //
+  //   /foo.html         -> 301 /foo
+  //   /foo/index.html   -> 301 /foo
+  //   /foo/             -> 301 /foo
+  //   /foo              -> rewrite /foo/index.html (200)
+  //   /foo/bar          -> rewrite /foo/bar/index.html (200)
+  //   /style.css        -> passthrough (dot in last segment)
+  //   /                 -> passthrough (default_root_object = index.html)
+  var uri = request.uri;
+
+  // 1) .html canonicalisation: strip .html (and /index.html) -> 301.
+  if (uri.length > 5 && uri.slice(-5) === ".html" && uri !== "/index.html") {
+    var target = uri.slice(0, -5);
+    if (target.length >= 6 && target.slice(-6) === "/index") {
+      target = target.slice(0, -6);
+      if (target === "") target = "/";
+    }
+    return permanentRedirect(target, request.querystring);
+  }
+
+  // 2) Trailing-slash canonicalisation: strip the slash -> 301.
+  //    Root `/` is preserved so default_root_object can resolve it.
+  if (uri.length > 1 && uri.slice(-1) === "/") {
+    return permanentRedirect(uri.slice(0, -1), request.querystring);
+  }
+
+  // 3) Directory-style rewrite: extensionless path -> /path/index.html.
+  //    Assets carry a dot in the last segment (style.css, main.js,
+  //    favicon.ico, fonts/foo.woff2) and pass through unchanged.
+  var lastSlash = uri.lastIndexOf("/");
+  var lastSegment = uri.slice(lastSlash + 1);
+  if (lastSegment.length > 0 && lastSegment.indexOf(".") === -1) {
+    request.uri = uri + "/index.html";
+    return request;
+  }
+  %{ endif ~}
+
+  return request;
+}
+
+%{ if enable_clean_urls ~}
+function permanentRedirect(target, querystring) {
+  var qs = buildQuerystring(querystring);
+  if (qs) target += "?" + qs;
+  return {
+    statusCode: 301,
+    statusDescription: "Moved Permanently",
+    headers: { location: { value: target } },
+  };
+}
+
+function buildQuerystring(qs) {
+  if (!qs) return "";
+  var parts = [];
+  for (var k in qs) {
+    var v = qs[k];
+    if (v.multiValue) {
+      for (var i = 0; i < v.multiValue.length; i++) {
+        parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v.multiValue[i].value));
+      }
+    } else {
+      parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v.value));
+    }
+  }
+  return parts.join("&");
+}
+%{ endif ~}

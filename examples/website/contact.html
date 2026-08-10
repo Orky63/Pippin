@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Us</title>
+  <link rel="canonical" href="/contact.html" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <nav role="navigation" aria-label="Main">
+    <a href="/" class="logo">Your Brand</a>
+    <button id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">Menu</button>
+    <ul id="nav-menu" hidden>
+      <li><a href="/">Home</a></li>
+      <li><a href="/contact.html">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1>Contact Us</h1>
+
+    <form id="contact-form">
+      <div class="form-group">
+        <label for="name">Name <span aria-label="required">*</span></label>
+        <input type="text" id="name" name="name" required aria-required="true" />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email <span aria-label="required">*</span></label>
+        <input type="email" id="email" name="email" required aria-required="true" />
+      </div>
+
+      <div class="form-group">
+        <label for="phone">Phone (optional)</label>
+        <input type="tel" id="phone" name="phone" />
+      </div>
+
+      <div class="form-group">
+        <label for="message">Message <span aria-label="required">*</span></label>
+        <textarea id="message" name="message" rows="5" required aria-required="true"></textarea>
+      </div>
+
+      <!-- Honeypot field (hidden from users, spam detection) -->
+      <input type="text" name="_hp" style="display: none" tabindex="-1" autocomplete="off" />
+
+      <button type="submit" id="submit-btn">Send Message</button>
+      <div id="form-message" aria-live="polite" aria-atomic="true"></div>
+    </form>
+  </main>
+
+  <footer>
+    <p>&copy; 2024. Built on AWS CloudFront + S3.</p>
+  </footer>
+
+  <script src="/config.js"></script>
+  <script src="/script.js"></script>
+  <script>
+    document.getElementById("contact-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = e.target;
+      const btn = document.getElementById("submit-btn");
+      const msg = document.getElementById("form-message");
+
+      btn.disabled = true;
+      btn.textContent = "Sending...";
+
+      const data = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        message: document.getElementById("message").value,
+        _hp: document.querySelector('input[name="_hp"]').value,
+      };
+
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          msg.textContent = "Thank you! Your message has been sent.";
+          msg.className = "success";
+          form.reset();
+        } else {
+          msg.textContent = `Error: ${result.error || "Failed to send message"}`;
+          msg.className = "error";
+        }
+      } catch (error) {
+        msg.textContent = `Error: ${error.message}`;
+        msg.className = "error";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Send Message";
+      }
+    });
+  </script>
+</body>
+</html>

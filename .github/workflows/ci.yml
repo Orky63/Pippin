@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive .
+
+      - name: Terraform Validate
+        run: |
+          terraform -chdir=examples/minimal init -backend=false
+          terraform -chdir=examples/minimal validate
+          terraform -chdir=examples/with-contact init -backend=false
+          terraform -chdir=examples/with-contact validate
+          terraform -chdir=examples/with-payments init -backend=false
+          terraform -chdir=examples/with-payments validate
+
+      - name: TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: TFLint Init
+        run: tflint --init
+
+      - name: TFLint Check
+        env:
+          TFLINT_CONFIG_FILE: ${{ github.workspace }}/.tflint.hcl
+        run: |
+          tflint
+          tflint --chdir=modules/payment-lambda
+          tflint --chdir=modules/contact-lambda
+          tflint --chdir=modules/website-foundations
+          tflint --chdir=modules/github-deploy-role

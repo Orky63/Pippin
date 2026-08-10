@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout</title>
+  <link rel="canonical" href="/checkout.html" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <nav role="navigation" aria-label="Main">
+    <a href="/" class="logo">Your Brand</a>
+    <button id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">Menu</button>
+    <ul id="nav-menu" hidden>
+      <li><a href="/">Home</a></li>
+      <li><a href="/contact.html">Contact</a></li>
+      <li><a href="/checkout.html">Checkout</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <h1>Checkout</h1>
+
+    <form id="payment-form">
+      <div class="form-group">
+        <label for="amount">Amount (USD)</label>
+        <input type="number" id="amount" name="amount" min="0.50" step="0.01" value="9.99" required />
+      </div>
+
+      <div class="form-group">
+        <label>Card Details</label>
+        <div id="card-element"></div>
+      </div>
+
+      <div id="payment-message" aria-live="polite" aria-atomic="true"></div>
+
+      <button type="submit" id="submit-btn">Pay Now</button>
+    </form>
+  </main>
+
+  <footer>
+    <p>&copy; 2024. Built on AWS CloudFront + S3.</p>
+  </footer>
+
+  <script src="/config.js"></script>
+  <script src="/script.js"></script>
+  <script>
+    // Initialize Stripe
+    const stripe = Stripe(window.STRIPE_PUBLISHABLE_KEY);
+    const elements = stripe.elements();
+    const cardElement = elements.create("card");
+    cardElement.mount("#card-element");
+
+    // Create payment intent via the API Gateway-backed Lambda. CloudFront
+    // injects the origin secret header server-side, so the browser just
+    // makes a normal same-origin POST.
+    async function createPaymentIntent(amount, currency = "usd", metadata = {}) {
+      const res = await fetch("/api/stripe/intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, currency, metadata }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      return res.json();
+    }
+
+    document.getElementById("payment-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = e.target;
+      const btn = document.getElementById("submit-btn");
+      const msg = document.getElementById("payment-message");
+      const amount = parseInt(document.getElementById("amount").value * 100); // Convert to cents
+
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+      msg.textContent = "";
+      msg.className = "";
+
+      try {
+        // Step 1: Create payment intent on Lambda
+        const { client_secret, payment_intent_id } = await createPaymentIntent(amount, "usd", {
+          payment_id: `checkout-${Date.now()}`,
+        });
+
+        // Step 2: Confirm payment with Stripe
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+          payment_method: {
+            card: cardElement,
+            billing_details: {},
+          },
+        });
+
+        if (confirmError) {
+          msg.textContent = `Payment failed: ${confirmError.message}`;
+          msg.className = "error";
+        } else if (paymentIntent.status === "succeeded") {
+          msg.textContent = `Payment successful! ID: ${paymentIntent.id}`;
+          msg.className = "success";
+          form.reset();
+        } else {
+          msg.textContent = `Payment status: ${paymentIntent.status}`;
+          msg.className = "error";
+        }
+      } catch (error) {
+        msg.textContent = `Error: ${error.message}`;
+        msg.className = "error";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Pay Now";
+      }
+    });
+
+    // Display card errors in real-time
+    cardElement.addEventListener("change", (event) => {
+      const msg = document.getElementById("payment-message");
+      if (event.error) {
+        msg.textContent = event.error.message;
+        msg.className = "error";
+      } else {
+        msg.textContent = "";
+        msg.className = "";
+      }
+    });
+  </script>
+</body>
+</html>

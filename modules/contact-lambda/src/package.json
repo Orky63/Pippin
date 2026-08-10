@@ -1,0 +1,6 @@
+{
+  "name": "contact-handler",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Contact form handler using SES"
+}
