@@ -881,3 +881,23 @@ signature arrives as `event.headers["stripe-signature"]`. The raw body is in
 ## License
 
 Internal use only.
+---
+
+## Rabbit Tracker Website
+
+A simple static website is included in `docs/` to track your rabbit's last known location.
+
+- `docs/index.html` — static tracker UI
+- `docs/app.js` — stores sightings in browser local storage
+- `docs/styles.css` — styles for the tracker app
+
+The site is published from the `gh-pages` branch.
+
+To run locally:
+```bash
+cd /Users/andyh/Websites/Pippin/docs
+python3 -m http.server 8000
+```
+
+Visit the live site at:
+`https://orky63.github.io/Pippin/`
