@@ -57,7 +57,7 @@ textarea {
   resize: vertical;
 }
 button {
-  background: #82c07f;
+  background: #d4af37;
   border: none;
   border-radius: 999px;
   color: #0b1120;
@@ -67,7 +67,7 @@ button {
   transition: transform 0.2s ease, background 0.2s ease;
 }
 button:hover {
-  background: #9edea1;
+  background: #f0ce6a;
   transform: translateY(-1px);
 }
 .latest-card {
@@ -94,11 +94,11 @@ button:hover {
 }
 .sighting-card strong {
   display: block;
-  color: #f8fafc;
+  color: #d4af37;
   margin-bottom: 0.4rem;
 }
 .sighting-card time {
-  color: #8ba4c8;
+  color: #e6c973;
   font-size: 0.9rem;
 }
 .empty-state {
