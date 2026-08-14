@@ -55,11 +55,11 @@
     // Create payment intent via the API Gateway-backed Lambda. CloudFront
     // injects the origin secret header server-side, so the browser just
     // makes a normal same-origin POST.
-    async function createPaymentIntent(amount, currency = "usd", metadata = {}) {
+    async function createPaymentIntent(amount, currency = "usd") {
       const res = await fetch("/api/stripe/intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, currency, metadata }),
+        body: JSON.stringify({ amount, currency }),
       });
 
       if (!res.ok) {
@@ -85,9 +85,7 @@
 
       try {
         // Step 1: Create payment intent on Lambda
-        const { client_secret, payment_intent_id } = await createPaymentIntent(amount, "usd", {
-          payment_id: `checkout-${Date.now()}`,
-        });
+        const { client_secret } = await createPaymentIntent(amount, "usd");
 
         // Step 2: Confirm payment with Stripe
         const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
